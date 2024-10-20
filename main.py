@@ -1,7 +1,6 @@
 import logging
 from selenium import webdriver
 from selenium.webdriver.edge.service import Service as EdgeService
-from webdriver_manager.microsoft import EdgeChromiumDriverManager
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
@@ -9,13 +8,13 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 import time
+import os
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Config
-LOGIN_TIME = 60  # Time for login (in seconds)
-NEW_MSG_TIME = 20  # Increased time for a new message (in seconds)
+NEW_MSG_TIME = 20  # Time for a new message (in seconds)
 SEND_MSG_TIME = 5  # Time for sending a message (in seconds)
 COUNTRY_CODE = 880  # Set your country code
 ACTION_TIME = 2  # Set time for button click action
@@ -23,13 +22,26 @@ IMAGE_PATH = None  # Path to image if you want to send
 MESSAGE_FILE = 'message.txt'  # Path to message file
 NUMBERS_FILE = 'numbers.txt'  # Path to numbers file
 
+# Set the path to your Edge user data directory
+# You need to replace this with the actual path on your system
+USER_DATA_DIR = r"C:\Users\Universe soft care\AppData\Local\Microsoft\Edge\User Data"
+PROFILE_DIR = "Default"  # or the name of the profile you want to use
+
 def create_driver():
     options = webdriver.EdgeOptions()
+    options.add_argument(f"user-data-dir={USER_DATA_DIR}")
+    options.add_argument(f"profile-directory={PROFILE_DIR}")
     options.add_argument("--start-maximized")
     options.add_argument("--disable-notifications")
+    options.add_argument("--disable-extensions")
+    options.add_argument("--disable-gpu")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    options.page_load_strategy = 'eager'
 
-    # Automatically download and use the Edge WebDriver
-    driver = webdriver.Edge(service=EdgeService(EdgeChromiumDriverManager().install()), options=options)
+    # Use the default Edge installation
+    service = EdgeService()
+    driver = webdriver.Edge(service=service, options=options)
     return driver
 
 def wait_for_element(driver, locator, timeout=20):
@@ -86,8 +98,15 @@ def main():
     try:
         # Open WhatsApp Web
         driver.get('https://web.whatsapp.com')
-        logging.info(f"Please scan the QR code within {LOGIN_TIME} seconds")
-        time.sleep(LOGIN_TIME)
+        logging.info("WhatsApp Web opened")
+
+        # Check if already logged in
+        try:
+            wait_for_element(driver, (By.XPATH, '//div[@contenteditable="true"][@data-tab="10"]'), timeout=10)
+            logging.info("Already logged in to WhatsApp Web")
+        except TimeoutException:
+            logging.info("Please scan the QR code if not already logged in")
+            input("Press Enter after scanning the QR code...")
 
         # Read message
         with open(MESSAGE_FILE, 'r', encoding='utf-8') as file:
