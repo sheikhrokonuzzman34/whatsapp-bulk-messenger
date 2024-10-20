@@ -91,6 +91,9 @@ def send_message(driver, phone_number, message, image_path=None):
     except Exception as e:
         logging.error(f"An error occurred while sending message to {phone_number}: {e}")
 
+
+    
+    
 def main():
     driver = create_driver()
     logging.info("WebDriver created")
@@ -100,13 +103,16 @@ def main():
         driver.get('https://web.whatsapp.com')
         logging.info("WhatsApp Web opened")
 
-        # Check if already logged in
-        try:
-            wait_for_element(driver, (By.XPATH, '//div[@contenteditable="true"][@data-tab="10"]'), timeout=10)
-            logging.info("Already logged in to WhatsApp Web")
-        except TimeoutException:
-            logging.info("Please scan the QR code if not already logged in")
-            input("Press Enter after scanning the QR code...")
+        # Check if logged in by continuously checking for the chat box
+        while True:
+            try:
+                # If this element is found, it means the user is logged in
+                wait_for_element(driver, (By.XPATH, '//div[@contenteditable="true"][@data-tab="10"]'), timeout=10)
+                logging.info("Successfully logged in to WhatsApp Web")
+                break  # Exit the loop as login is successful
+            except TimeoutException:
+                logging.info("Waiting for QR code scan. Please scan the QR code...")
+                time.sleep(5)  # Retry every 5 seconds
 
         # Read message
         with open(MESSAGE_FILE, 'r', encoding='utf-8') as file:
@@ -126,4 +132,9 @@ def main():
         logging.info("WebDriver closed")
 
 if __name__ == "__main__":
-    main()
+    main()    
+    
+    
+    
+    
+    
